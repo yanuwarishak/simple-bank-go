@@ -1,5 +1,17 @@
 postgres:
-	docker run --name postgres12 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
+	@echo "Checking if container 'postgres12' exists..."
+	@if [ "$$(docker ps -a -q -f name=^/postgres12$$)" = "" ]; then \
+		echo "Container not found. Creating..."; \
+		docker run --name postgres12 -p 5432:5432 \
+			-e POSTGRES_USER=root \
+			-e POSTGRES_PASSWORD=secret \
+			-d postgres:12-alpine; \
+	elif [ "$$(docker ps -q -f name=^/postgres12$$)" = "" ]; then \
+		echo "Container exists but not running. Starting..."; \
+		docker start postgres12; \
+	else \
+		echo "Container 'postgres12' is already running."; \
+	fi
 
 createdb:
 	docker exec -it postgres12 createdb --username=root --owner=root simple_bank

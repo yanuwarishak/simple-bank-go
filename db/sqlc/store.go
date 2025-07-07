@@ -6,25 +6,31 @@ import (
 	"fmt"
 )
 
-// Store provides all functions to execute SQL queries and transactions.
+// Store provides all functions to execute db queries and transactions
+type Store interface {
+	Querier
+	TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error)
+}
+
+// SQLStore provides all functions to execute SQL queries and transactions.
 // It wraps the generated Queries type and provides a database connection.
 // It is used to manage the database connection and execute queries.
 // The Store type is used to create a new instance of the Queries type with a database connection
-type Store struct {
-	*Queries
+type SQLStore struct {
 	db *sql.DB
+	*Queries
 }
 
 // NewStore creates a new Store instance with the provided database connection.
 // It initializes the Queries type with the database connection and returns the Store instance.
-func NewStore(db *sql.DB) *Store {
-	return &Store{
+func NewStore(db *sql.DB) Store {
+	return &SQLStore{
 		db:      db,
 		Queries: New(db),
 	}
 }
 
-func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
+func (store *SQLStore) execTx(ctx context.Context, fn func(*Queries) error) error {
 	tx, err := store.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -42,12 +48,14 @@ func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
 	return tx.Commit()
 }
 
+// TransferTxParams contains the input parameters for performing a money transfer transaction.
 type TransferTxParams struct {
 	FromAccountID int64 `json:"from_account_id"`
 	ToAccountID   int64 `json:"to_account_id"`
 	Amount        int64 `json:"amount"`
 }
 
+// TransferTxResult contains the output type from money transfer transaction.
 type TransferTxResult struct {
 	Transfer    Transfer `json:"transfer"`
 	FromAccount Account  `json:"from_account"`
@@ -58,7 +66,7 @@ type TransferTxResult struct {
 
 // TransferTx performs a money transfer between two accounts within a transaction.
 // It creates a transfer record, adds money to the recipient's account, and deducts money
-func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
+func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
 	var result TransferTxResult
 
 	err := store.execTx(ctx, func(q *Queries) error {

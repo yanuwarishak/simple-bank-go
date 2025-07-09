@@ -213,7 +213,7 @@ func TestTransferAPI(t *testing.T) {
 			require.NoError(t, err)
 
 			server.router.ServeHTTP(recorder, request)
-			t.Log("Response body:", recorder.Body.String())
+
 			tc.checkResponse(recorder)
 		})
 	}

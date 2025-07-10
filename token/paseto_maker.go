@@ -14,7 +14,7 @@ type PasetoMaker struct {
 	symmetricKey []byte
 }
 
-// Maker is an interface for creating and verifying tokens.
+// NewPasetoMaker is an interface for creating and verifying tokens.
 func NewPasetoMaker(symmetricKey string) (Maker, error) {
 	if len(symmetricKey) != chacha20poly1305.KeySize {
 		return nil, fmt.Errorf("invalid symmetric key length: must be %d bytes, got %d bytes", chacha20poly1305.KeySize, len(symmetricKey))
@@ -28,6 +28,7 @@ func NewPasetoMaker(symmetricKey string) (Maker, error) {
 	return maker, nil
 }
 
+// CreateToken create paseto token
 func (maker *PasetoMaker) CreateToken(username string, duration time.Duration) (string, error) {
 	payload, err := NewPayload(username, duration)
 	if err != nil {
@@ -36,6 +37,7 @@ func (maker *PasetoMaker) CreateToken(username string, duration time.Duration) (
 	return maker.paseto.Encrypt(maker.symmetricKey, payload, nil)
 }
 
+// VerifyToken verify paseto token
 func (maker *PasetoMaker) VerifyToken(token string) (*Payload, error) {
 	payload := &Payload{}
 	err := maker.paseto.Decrypt(token, maker.symmetricKey, payload, nil)
